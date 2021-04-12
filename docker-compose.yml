@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  app: 
+    build:
+      context: .
+      target: development
+    ports:
+      - "9000:8000"
+    volumes: 
+      - ".:/var/www"
