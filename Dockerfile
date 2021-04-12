@@ -1,10 +1,6 @@
 FROM php:8.0 AS builder
 WORKDIR /var/www/html/
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        git libzip-dev zip unzip && \
-        apt-get autoremove -y && \
-        rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends git libzip-dev zip unzip
 RUN docker-php-ext-install zip
 RUN curl -sSk https://getcomposer.org/installer | php -- --disable-tls && \
    mv composer.phar /usr/local/bin/composer
@@ -25,15 +21,12 @@ EXPOSE 8000
 
 
 FROM php:8.0-apache AS production
-ENV \
-    APACHE_DOCUMENT_ROOT=/var/www/html/public \
-    APP_ENV=prod \
-    APP_DEBUG=0
+ENV APACHE_DOCUMENT_ROOT="/var/www/html/public"
 COPY ./apache/vhost.conf /etc/apache2/sites-available/000-default.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 RUN a2enmod rewrite
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 WORKDIR /var/www/html/
 COPY . .
-COPY --from=builder /var/www/html/vendor .
-RUN chown -R www-data:www-data /var/www/html
+COPY --from=builder /var/www/html/vendor ./vendor
+RUN chown -R www-data:www-data /var/www/html/public

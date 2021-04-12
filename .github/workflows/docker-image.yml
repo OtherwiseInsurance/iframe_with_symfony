@@ -1,0 +1,77 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      
+      - uses: actions/checkout@v2
+
+      - name: Build, tag, and push the Docker image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: iframe-symfony
+          IMAGE_TAG: latest
+        run: |
+          docker build . --file Dockerfile --target production --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+      
+      - name: Create Dockerrun file
+        run: |
+          printf '{"AWSEBDockerrunVersion":"1","Image":{"Name":"%s","Update":"true"},"Ports":[{"ContainerPort":80}]}' ${{ steps.build-image.outputs.image }} > Dockerrun.aws.json
+      
+      - name: Archive Dockerrun file
+        uses: actions/upload-artifact@v2
+        with:
+          name: Dockerrun
+          path: Dockerrun.aws.json
+  
+  deploy:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      
+      - name: Download Dockerrun file
+        uses: actions/download-artifact@v2
+        with:
+          name: Dockerrun
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
+      
+      - name: Install Amazon Elastic Beanstalk CLI
+        run: |
+          sudo apt-get install -y build-essential zlib1g-dev libssl-dev libncurses-dev libffi-dev libsqlite3-dev libreadline-dev libbz2-dev
+          git clone https://github.com/aws/aws-elastic-beanstalk-cli-setup.git
+          ./aws-elastic-beanstalk-cli-setup/scripts/bundled_installer
+      
+      - name: Deploy on Amazon EBS demo
+        run: |
+          mkdir .elasticbeanstalk
+          printf "deploy:\n  artifact: Dockerrun.aws.json" > .elasticbeanstalk/config.yml
+          echo 'export PATH="/home/runner/.ebcli-virtual-env/executables:$PATH"' >> ~/.bash_profile && source ~/.bash_profile
+          eb init --region eu-west-3 --platform docker by-otherwise
+          eb deploy --region eu-west-3 by-otherwise-demo
