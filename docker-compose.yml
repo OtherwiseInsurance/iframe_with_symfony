@@ -5,6 +5,7 @@ services:
     build:
       context: .
       target: development
+    env_file: .env
     ports:
       - "9000:8000"
     volumes: 
