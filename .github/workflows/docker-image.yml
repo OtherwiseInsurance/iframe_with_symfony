@@ -68,10 +68,11 @@ jobs:
           git clone https://github.com/aws/aws-elastic-beanstalk-cli-setup.git
           ./aws-elastic-beanstalk-cli-setup/scripts/bundled_installer
       
-      - name: Deploy on Amazon EBS demo
+      - name: Deploy productions on Amazon EBS
         run: |
           mkdir .elasticbeanstalk
           printf "deploy:\n  artifact: Dockerrun.aws.json" > .elasticbeanstalk/config.yml
           echo 'export PATH="/home/runner/.ebcli-virtual-env/executables:$PATH"' >> ~/.bash_profile && source ~/.bash_profile
           eb init --region eu-west-3 --platform docker by-otherwise
           eb deploy --region eu-west-3 by-otherwise-demo
+          eb deploy --region eu-west-3 by-otherwise-prod
