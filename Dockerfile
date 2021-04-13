@@ -11,10 +11,6 @@ RUN composer install --no-dev --optimize-autoloader
 
 
 FROM builder AS development
-ENV \
-    APP_ENV=dev \
-    APP_DEBUG=1 \
-    OTHERWISE_URL=http://localhost:8000
 WORKDIR /var/www/html
 CMD composer install ; symfony server:start --no-tls
 EXPOSE 8000
