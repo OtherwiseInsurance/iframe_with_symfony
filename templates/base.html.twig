@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html style="height:100%;width:100%;">
     <head>
         <meta charset="UTF-8">
         <title>{% block title %}By Otherwise{% endblock %}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="https://meyerweb.com/eric/tools/css/reset/reset.css">
         {# Run `composer require symfony/webpack-encore-bundle`
            and uncomment the following Encore helpers to start using Symfony UX #}
@@ -14,7 +15,7 @@
             {#{{ encore_entry_script_tags('app') }}#}
         {% endblock %}
     </head>
-    <body>
+    <body style="height:100%;width:100%;overflow:hidden">
         {% block body %}{% endblock %}
     </body>
 </html>
